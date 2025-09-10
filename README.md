@@ -1,16 +1,21 @@
-# denun
+# 📱 Denun
 
-A new Flutter project.
+**Denun** é um aplicativo de denúncias urbanas desenvolvido em **Flutter** com integração ao **Firebase**.  
+O objetivo é permitir que cidadãos registrem problemas na cidade — como buracos nas ruas, falta de iluminação, acúmulo de lixo, entre outros — de forma simples, rápida e segura.
 
-## Getting Started
+## 🚀 Funcionalidades planejadas
+- Cadastro e login de usuários (Firebase Auth).
+- Registro de denúncias com título, descrição e localização.
+- Upload de fotos, vídeos e áudios como anexos (Firebase Storage).
+- Armazenamento em tempo real das denúncias no banco de dados (Cloud Firestore).
+- Notificações push para atualizações (Firebase Cloud Messaging).
 
-This project is a starting point for a Flutter application.
+## 🛠️ Tecnologias utilizadas
+- **Flutter** (Dart) – desenvolvimento multiplataforma.
+- **Firebase Auth** – autenticação de usuários.
+- **Cloud Firestore** – banco de dados NoSQL em tempo real.
+- **Firebase Storage** – armazenamento de anexos.
+- **GitHub** – versionamento e colaboração em equipe.
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## 🤝 Contribuição
+Este projeto está sendo desenvolvido em grupo. Contribuições, sugestões e melhorias são bem-vindas via **Pull Requests**.
