@@ -65,7 +65,7 @@ class Usuario {
         "senhaHash": _senhaHash,
         "papel": _papel.name,
         "emailConfirmado": _emailConfirmado,
-      };
+  };
 
   factory Usuario.fromJson(Map<String, dynamic> json) => Usuario(
         idUsuario: json["idUsuario"],

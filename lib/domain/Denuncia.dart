@@ -15,7 +15,7 @@ class Localizacao {
   Map<String, dynamic> toJson() => {
         "latitude": latitude,
         "longitude": longitude,
-      };
+  };
 
   factory Localizacao.fromJson(Map<String, dynamic> json) => Localizacao(
         latitude: json["latitude"],

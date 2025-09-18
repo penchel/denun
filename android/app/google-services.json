@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "357318229647",
+    "project_id": "denun-pucminas",
+    "storage_bucket": "denun-pucminas.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:357318229647:android:c4b6a4082854e15064fafa",
+        "android_client_info": {
+          "package_name": "com.example.denun"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC4YwKg2Q5MHPeT4W9YjOtbarNzLqpz66Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
