@@ -1,7 +1,7 @@
 enum PapelUsuario { cidadao, agente, admin }
 
 class Usuario {
-  final String idUsuario;
+  String? idUsuario;
   String _nome;
   String _email;
   String? _cpf; // pode ser nulo
@@ -10,7 +10,7 @@ class Usuario {
   bool _emailConfirmado;
 
   Usuario({
-    required this.idUsuario,
+    this.idUsuario,
     required String nome,
     required String email,
     String? cpf, // opcional

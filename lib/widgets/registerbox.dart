@@ -1,8 +1,27 @@
+import 'package:denun/screen/welcome.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-enum PapelUsuario { cidadao, agente, admin }
-class LoginBox extends StatelessWidget {
-  const LoginBox({super.key});
+import '../domain/Usuario.dart';
+import '../services/auth.dart';
+
+final Map<PapelUsuario, String> papelUsuarioToString = {
+  PapelUsuario.cidadao: "Cidadão",
+  PapelUsuario.agente: "Agente",
+  PapelUsuario.admin: "Administrador",
+};
+
+// Variável para guardar o papel selecionado
+PapelUsuario? papelSelecionado = PapelUsuario.cidadao;
+
+// ignore: must_be_immutable
+class RegisterBox extends StatelessWidget {
+  RegisterBox({super.key});
+
+  final _emailController = TextEditingController();
+  final _senhaController = TextEditingController();
+  final _cpfController = TextEditingController();
+  final _nomeController = TextEditingController(); // ← novo campo
 
   @override
   Widget build(BuildContext context) {
@@ -24,17 +43,31 @@ class LoginBox extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            "Entrar",
+            "Cadastro",
             style: GoogleFonts.montserrat(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: const Color(0xFF1E3A8A), // Azul branding
+              color: const Color(0xFF1E3A8A),
             ),
           ),
           const SizedBox(height: 20),
 
+          // Campo de nome
+          TextField(
+            controller: _nomeController,
+            decoration: InputDecoration(
+              hintText: "Nome completo",
+              prefixIcon: const Icon(Icons.badge_outlined),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+
           // Campo de e-mail
           TextField(
+            controller: _emailController,
             decoration: InputDecoration(
               hintText: "E-mail",
               prefixIcon: const Icon(Icons.email_outlined),
@@ -47,9 +80,10 @@ class LoginBox extends StatelessWidget {
 
           // Campo de CPF
           TextField(
+            controller: _cpfController,
             decoration: InputDecoration(
               hintText: "CPF",
-              prefixIcon: const Icon(Icons.person),
+              prefixIcon: const Icon(Icons.perm_identity_outlined),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -70,20 +104,21 @@ class LoginBox extends StatelessWidget {
               return DropdownMenuItem(
                 value: papel,
                 child: Text(
-                  papel.toString().split('.').last, // mostra só o nome (cidadao, agente, admin)
+                  papelUsuarioToString[papel] ??
+                      papel.toString().split('.').last,
                 ),
               );
             }).toList(),
             onChanged: (PapelUsuario? valor) {
-              // Aqui você pode salvar o valor selecionado em uma variável
               debugPrint("Selecionado: $valor");
+              papelSelecionado = valor;
             },
           ),
           const SizedBox(height: 16),
 
-
           // Campo de senha
           TextField(
+            controller: _senhaController,
             obscureText: true,
             decoration: InputDecoration(
               hintText: "Senha",
@@ -95,7 +130,7 @@ class LoginBox extends StatelessWidget {
           ),
           const SizedBox(height: 20),
 
-          // Botão
+          // Botão cadastrar
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
@@ -106,9 +141,40 @@ class LoginBox extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              onPressed: () {},
+              onPressed: () async {
+                debugPrint("Registrando...");
+                debugPrint("Nome: ${_nomeController.text}");
+                debugPrint("E-mail: ${_emailController.text}");
+                debugPrint("CPF: ${_cpfController.text}");
+                debugPrint("Senha: ${_senhaController.text}");
+                debugPrint("Papel: $papelSelecionado");
+                Usuario novoUsuario = Usuario(
+                  idUsuario: _nomeController.text,
+                  nome: _nomeController.text,
+                  email: _emailController.text,
+                  senhaHash: _senhaController.text,
+                  papel: papelSelecionado ?? PapelUsuario.cidadao,
+                );
+                  // ✅ Espera o resultado da autenticação
+                User? user = await criarUsuario(novoUsuario.toJson());
+                if (user != null) {
+                  // ✅ Login bem-sucedido → vai pra tela de boas-vindas
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          WelcomePage(nomeUsuario: _nomeController.text),
+                    ),
+                  );
+                } else{
+                  // ❌ Falha → mostra mensagem
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Falha na autenticação')),
+                  );
+                }
+              },
               child: Text(
-                "Login",
+                "Cadastrar",
                 style: GoogleFonts.montserrat(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -120,11 +186,13 @@ class LoginBox extends StatelessWidget {
 
           const SizedBox(height: 12),
 
-          // Link registrar
+          // Link entrar
           TextButton(
-            onPressed: () {},
+            onPressed: () {
+              Navigator.pop(context);
+            },
             child: Text(
-              "Registrar-se",
+              "Entrar",
               style: GoogleFonts.montserrat(
                 fontSize: 14,
                 color: const Color(0xFF1E3A8A),

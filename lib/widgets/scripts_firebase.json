@@ -1,0 +1,34 @@
+{
+  "usuarios": {
+    "idUsuario": {
+      "nome": "string",
+      "email": "string",
+      "cpf": "string",
+      "senhaHash": "string",
+      "papel": "enum[cidadao, agente, admin]",
+      "emailConfirmado": "bool",
+      "denuncias": {
+        "idDenuncia": {
+          "titulo": "string",
+          "descricao": "string",
+          "dataCriacao": "timestamp",
+          "endereco": "string",
+          "localizacao": {
+            "latitude": "double",
+            "longitude": "double"
+          },
+          "statusAtual": "string", 
+          "prioridade": "string", 
+          "autorId": "idUsuario",
+          "arquivos": {
+            "idArquivo": {
+              "urlArquivo": "string",
+              "tipo": "string (ex: imagem, vídeo, áudio)",
+              "dataUpload": "timestamp"
+            }
+          }
+        }
+      }
+    }
+  }
+}

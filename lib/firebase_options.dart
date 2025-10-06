@@ -85,4 +85,5 @@ class DefaultFirebaseOptions {
     storageBucket: 'denun-pucminas.firebasestorage.app',
     measurementId: 'G-TGSZQB0LLH',
   );
+
 }
