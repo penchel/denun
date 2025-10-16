@@ -35,7 +35,15 @@ class HomePage extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: 32),
-                LoginBox(),
+                Container(
+                  width: 400, // define o tamanho máximo
+                  padding: const EdgeInsets.all(16), // espaço interno
+                  margin: const EdgeInsets.symmetric(horizontal: 16), // margem externa
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: LoginBox(),
+                ),
               ],
             )
           ),

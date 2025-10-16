@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../screen/register.dart';
-
-
+import '../services/auth.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:denun/screen/welcome.dart';
 class LoginBox extends StatelessWidget {
-  const LoginBox({super.key});
+  LoginBox({super.key});
+
+  final _emailController = TextEditingController();
+  final _senhaController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -37,6 +41,7 @@ class LoginBox extends StatelessWidget {
 
           // Campo de e-mail
           TextField(
+            controller: _emailController,
             decoration: InputDecoration(
               hintText: "E-mail",
               prefixIcon: const Icon(Icons.email_outlined),
@@ -49,6 +54,7 @@ class LoginBox extends StatelessWidget {
 
           // Campo de senha
           TextField(
+            controller: _senhaController,
             obscureText: true,
             decoration: InputDecoration(
               hintText: "Senha",
@@ -71,7 +77,27 @@ class LoginBox extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              onPressed: () {},
+              onPressed: () async {
+                User? user = await entrarUsuario(
+                  _emailController.text,
+                  _senhaController.text,
+                );
+                if (user != null){
+                  // ✅ Login bem-sucedido → vai pra tela de boas-vindas
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          WelcomePage(nomeUsuario: _emailController.text),
+                    ),
+                  );
+                }else{
+                  // ❌ Falha → mostra mensagem
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Falha na autenticação')),
+                  );
+                }
+              },
               child: Text(
                 "Login",
                 style: GoogleFonts.montserrat(
