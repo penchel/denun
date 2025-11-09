@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:uuid/uuid.dart';
-import '../domain/Arquivo.dart';
 import '../domain/Denuncia.dart';
+import '../services/denuncia_service.dart';
 
 class DenunciasPage extends StatefulWidget {
   const DenunciasPage({super.key});
@@ -20,6 +19,7 @@ class _DenunciasPageState extends State<DenunciasPage> {
   // Lista de denúncias
   List<Denuncia> _denuncias = [];
   bool _isLoading = true;
+  final DenunciaService _denunciaService = DenunciaService();
 
   @override
   void initState() {
@@ -30,74 +30,34 @@ class _DenunciasPageState extends State<DenunciasPage> {
   Future<void> _carregarDenuncias() async {
     setState(() => _isLoading = true);
 
-    // Simula um carregamento da rede
-    await Future.delayed(const Duration(seconds: 1));
-
-    // --- DADOS DE EXEMPLO (MOCK) ---
-    // No futuro, aqui será substituido pelos dados do Firestore.
-    var uuid = const Uuid();
-    final mockData = [
-      Denuncia(
-        idDenuncia: uuid.v4(),
-        titulo: 'Buraco gigante na Av. João César',
-        descricao:
-            'Existe um buraco perigoso na avenida principal, perto do número 500, que já causou acidentes com motociclistas. A situação é crítica e precisa de reparo urgente.',
-        localizacao: Localizacao(latitude: -19.9023, longitude: -44.0321),
-        endereco: 'Av. João César de Oliveira, 500 - Contagem/MG',
-        autorId: 'user123',
-        dataCriacao: DateTime.now().subtract(const Duration(days: 2)),
-        statusAtual: StatusDenuncia.novo,
-        prioridade: Prioridade.alta,
-        arquivos: [
-          Arquivo(
-              idArquivo: uuid.v4(),
-              urlArquivo: 'https://placehold.co/600x400/orange/white?text=Foto+do+Buraco',
-              tipo: TipoArquivo.foto)
-        ],
-      ),
-      Denuncia(
-        idDenuncia: uuid.v4(),
-        titulo: 'Lixo acumulado na praça do bairro Eldorado',
-        descricao:
-            'A lixeira da praça central está transbordando há mais de uma semana, atraindo animais e causando mau cheiro. Moradores estão reclamando bastante.',
-        localizacao: Localizacao(latitude: -19.9245, longitude: -43.9352),
-        endereco: 'Praça do Coreto, s/n - Contagem/MG',
-        autorId: 'user456',
-        dataCriacao: DateTime.now().subtract(const Duration(days: 5)),
-        statusAtual: StatusDenuncia.emAnalise,
-        prioridade: Prioridade.media,
-      ),
-      Denuncia(
-        idDenuncia: uuid.v4(),
-        titulo: 'Poste de luz queimado na Rua das Gaivotas',
-        descricao:
-            'O poste em frente à padaria está com a luz queimada, deixando a rua muito escura e perigosa durante a noite. Vários assaltos já ocorreram na área.',
-        localizacao: Localizacao(latitude: -19.8653, longitude: -43.9634),
-        endereco: 'Rua das Gaivotas, 123 - Pampulha, Belo Horizonte/MG',
-        autorId: 'user789',
-        dataCriacao: DateTime.now().subtract(const Duration(days: 10)),
-        statusAtual: StatusDenuncia.concluida,
-        prioridade: Prioridade.baixa,
-      ),
-      Denuncia(
-        idDenuncia: uuid.v4(),
-        titulo: 'Veículo abandonado há mais de um mês',
-        descricao:
-            'Carro modelo Fiat Uno, cor branca, está abandonado na rua há mais de um mês, ocupando uma vaga e acumulando sujeira. A placa é HMA-4321.',
-        localizacao: Localizacao(latitude: -19.9328, longitude: -43.9298),
-        endereco: 'Rua dos Guajajaras, 1100 - Lourdes, Belo Horizonte/MG',
-        autorId: 'user101',
-        dataCriacao: DateTime.now().subtract(const Duration(days: 35)),
-        statusAtual: StatusDenuncia.emAtendimento,
-        prioridade: Prioridade.media,
-      ),
-    ];
-
-    if (mounted) {
-      setState(() {
-        _denuncias = mockData;
-        _isLoading = false;
-      });
+    try {
+      // Busca denúncias do usuário atual do Firestore
+      List<Denuncia> denuncias = await _denunciaService.listarMinhasDenuncias();
+      
+      if (mounted) {
+        setState(() {
+          _denuncias = denuncias;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('❌ Erro ao carregar denúncias: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        
+        // Mostra mensagem de erro
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Erro ao carregar denúncias. Tente novamente.',
+              style: GoogleFonts.montserrat(),
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -290,6 +250,37 @@ class _DenunciasPageState extends State<DenunciasPage> {
     );
   }
 
+  void _criarDenuncia() {
+    // Navega para o mapa onde o usuário pode criar uma denúncia
+    // Por enquanto, mostra um diálogo informativo
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Criar Denúncia',
+          style: GoogleFonts.montserrat(fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          'Para criar uma nova denúncia, vá até a tela do Mapa e selecione a localização.',
+          style: GoogleFonts.montserrat(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Entendi',
+              style: GoogleFonts.montserrat(
+                color: const Color(0xFF1E3A8A),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _verDetalhes(Denuncia denuncia) {
     showDialog(
       context: context,
@@ -386,6 +377,11 @@ class _DenunciasPageState extends State<DenunciasPage> {
           IconButton(
             icon: const Icon(Icons.filter_list, color: Colors.white),
             onPressed: _mostrarFiltros,
+          ),
+          IconButton(
+            icon: const Icon(Icons.add, color: Colors.white),
+            onPressed: _criarDenuncia,
+            tooltip: 'Nova denúncia',
           ),
         ],
       ),

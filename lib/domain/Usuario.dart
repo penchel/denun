@@ -22,7 +22,12 @@ class Usuario {
         _cpf = cpf,
         _senhaHash = senhaHash,
         _papel = papel,
-        _emailConfirmado = emailConfirmado;
+        _emailConfirmado = emailConfirmado {
+    // 🔒 validação de formato de e-mail
+    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(email)) {
+      throw FormatException('E-mail inválido: $email');
+    }
+  }
 
   // Getters
   String get nome => _nome;
@@ -40,9 +45,10 @@ class Usuario {
   void setEmail(String novoEmail) {
     if (RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(novoEmail)) {
       _email = novoEmail;
+    } else {
+      throw FormatException('E-mail inválido: $novoEmail');
     }
   }
-
 
   void setSenhaHash(String novoHash) {
     if (novoHash.isNotEmpty) _senhaHash = novoHash;
@@ -65,7 +71,7 @@ class Usuario {
         "senhaHash": _senhaHash,
         "papel": _papel.name,
         "emailConfirmado": _emailConfirmado,
-  };
+      };
 
   factory Usuario.fromJson(Map<String, dynamic> json) => Usuario(
         idUsuario: json["idUsuario"],

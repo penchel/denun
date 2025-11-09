@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../services/user_service.dart';
+import '../domain/Usuario.dart';
 
 class PerfilPage extends StatefulWidget {
   const PerfilPage({super.key});
@@ -11,7 +13,9 @@ class PerfilPage extends StatefulWidget {
 
 class _PerfilPageState extends State<PerfilPage> {
   User? _firebaseUser;
+  Usuario? _usuario;
   bool _isLoading = true;
+  final UserService _userService = UserService();
 
   @override
   void initState() {
@@ -25,12 +29,39 @@ class _PerfilPageState extends State<PerfilPage> {
     // Pega o usuário autenticado do Firebase Auth
     _firebaseUser = FirebaseAuth.instance.currentUser;
 
+    // Busca os dados do usuário no Firestore
+    if (_firebaseUser != null) {
+      _usuario = await _userService.buscarUsuarioPorId(_firebaseUser!.uid);
+    }
+
     setState(() => _isLoading = false);
   }
 
-  String _getEmailUsername() {
-    if (_firebaseUser?.email == null) return 'Usuário';
-    return _firebaseUser!.email!.split('@')[0];
+  String _getNomeExibicao() {
+    if (_usuario != null) {
+      return _usuario!.nome;
+    }
+    if (_firebaseUser?.displayName != null) {
+      return _firebaseUser!.displayName!;
+    }
+    if (_firebaseUser?.email != null) {
+      return _firebaseUser!.email!.split('@')[0];
+    }
+    return 'Usuário';
+  }
+
+  String _getPapelExibicao() {
+    if (_usuario != null) {
+      switch (_usuario!.papel) {
+        case PapelUsuario.cidadao:
+          return 'Cidadão';
+        case PapelUsuario.agente:
+          return 'Agente';
+        case PapelUsuario.admin:
+          return 'Administrador';
+      }
+    }
+    return 'Cidadão';
   }
 
   void _editarPerfil() {
@@ -38,30 +69,47 @@ class _PerfilPageState extends State<PerfilPage> {
       context: context,
       builder: (context) {
         final nomeController = TextEditingController(
-          text: _firebaseUser?.displayName ?? _getEmailUsername(),
+          text: _usuario?.nome ?? _getNomeExibicao(),
         );
-        
+        final cpfController = TextEditingController(text: _usuario?.cpf ?? '');
+
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           title: Text(
-            'Editar Nome de Exibição',
+            'Editar Perfil',
             style: GoogleFonts.montserrat(fontWeight: FontWeight.bold),
           ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nomeController,
-                decoration: InputDecoration(
-                  labelText: 'Nome',
-                  labelStyle: GoogleFonts.montserrat(),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nomeController,
+                  decoration: InputDecoration(
+                    labelText: 'Nome',
+                    labelStyle: GoogleFonts.montserrat(),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    prefixIcon: const Icon(Icons.person_outline),
                   ),
-                  prefixIcon: const Icon(Icons.person_outline),
                 ),
-              ),
-            ],
+                const SizedBox(height: 16),
+                TextField(
+                  controller: cpfController,
+                  decoration: InputDecoration(
+                    labelText: 'CPF (opcional)',
+                    labelStyle: GoogleFonts.montserrat(),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    prefixIcon: const Icon(Icons.badge_outlined),
+                  ),
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
@@ -75,26 +123,48 @@ class _PerfilPageState extends State<PerfilPage> {
               onPressed: () async {
                 if (nomeController.text.isNotEmpty && _firebaseUser != null) {
                   try {
+                    // Atualiza no Firestore
+                    bool sucesso = await _userService
+                        .atualizarUsuario(_firebaseUser!.uid, {
+                          'nome': nomeController.text,
+                          'cpf': cpfController.text.isEmpty
+                              ? null
+                              : cpfController.text,
+                        });
+
+                    // Atualiza também no Firebase Auth (displayName)
                     await _firebaseUser!.updateDisplayName(nomeController.text);
                     await _firebaseUser!.reload();
-                    
+
                     Navigator.pop(context);
                     _carregarUsuario(); // Recarrega os dados
-                    
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'Nome atualizado com sucesso!',
-                          style: GoogleFonts.montserrat(),
+
+                    if (sucesso) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Perfil atualizado com sucesso!',
+                            style: GoogleFonts.montserrat(),
+                          ),
+                          backgroundColor: Colors.green,
                         ),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Aviso: Alguns dados podem não ter sido atualizados',
+                            style: GoogleFonts.montserrat(),
+                          ),
+                          backgroundColor: Colors.orange,
+                        ),
+                      );
+                    }
                   } catch (e) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                          'Erro ao atualizar nome',
+                          'Erro ao atualizar perfil: $e',
                           style: GoogleFonts.montserrat(),
                         ),
                         backgroundColor: Colors.red,
@@ -127,9 +197,11 @@ class _PerfilPageState extends State<PerfilPage> {
         final senhaAtualController = TextEditingController();
         final novaSenhaController = TextEditingController();
         final confirmarSenhaController = TextEditingController();
-        
+
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           title: Text(
             'Alterar Senha',
             style: GoogleFonts.montserrat(fontWeight: FontWeight.bold),
@@ -222,10 +294,10 @@ class _PerfilPageState extends State<PerfilPage> {
                     password: senhaAtualController.text,
                   );
                   await _firebaseUser!.reauthenticateWithCredential(credential);
-                  
+
                   // Altera a senha
                   await _firebaseUser!.updatePassword(novaSenhaController.text);
-                  
+
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
@@ -384,9 +456,7 @@ class _PerfilPageState extends State<PerfilPage> {
     if (_isLoading) {
       return const Scaffold(
         body: Center(
-          child: CircularProgressIndicator(
-            color: Color(0xFF1E3A8A),
-          ),
+          child: CircularProgressIndicator(color: Color(0xFF1E3A8A)),
         ),
       );
     }
@@ -462,7 +532,8 @@ class _PerfilPageState extends State<PerfilPage> {
       );
     }
 
-    String nomeExibicao = _firebaseUser!.displayName ?? _getEmailUsername();
+    String nomeExibicao = _getNomeExibicao();
+    String papelExibicao = _getPapelExibicao();
     DateTime? dataCriacao = _firebaseUser!.metadata.creationTime;
 
     return Scaffold(
@@ -532,12 +603,12 @@ class _PerfilPageState extends State<PerfilPage> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
-                          _firebaseUser!.emailVerified 
-                              ? Icons.verified 
+                          _firebaseUser!.emailVerified
+                              ? Icons.verified
                               : Icons.mail_outline,
                           size: 16,
-                          color: _firebaseUser!.emailVerified 
-                              ? Colors.greenAccent 
+                          color: _firebaseUser!.emailVerified
+                              ? Colors.greenAccent
                               : Colors.white70,
                         ),
                         const SizedBox(width: 4),
@@ -550,7 +621,7 @@ class _PerfilPageState extends State<PerfilPage> {
                         ),
                       ],
                     ),
-                    
+
                     // Botão para reenviar verificação
                     if (!_firebaseUser!.emailVerified) ...[
                       const SizedBox(height: 12),
@@ -576,21 +647,25 @@ class _PerfilPageState extends State<PerfilPage> {
                         ),
                       ),
                     ],
-                    
+
                     const SizedBox(height: 12),
 
-                    // Tag de cidadão
+                    // Tag de papel do usuário
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.blue,
+                        color: _usuario?.papel == PapelUsuario.admin
+                            ? Colors.red
+                            : _usuario?.papel == PapelUsuario.agente
+                            ? Colors.orange
+                            : Colors.blue,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
-                        'Cidadão',
+                        papelExibicao,
                         style: GoogleFonts.montserrat(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -606,46 +681,85 @@ class _PerfilPageState extends State<PerfilPage> {
             const SizedBox(height: 24),
 
             // Informações adicionais
-            if (dataCriacao != null)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.calendar_today_outlined,
-                        color: Colors.grey[700],
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                children: [
+                  if (dataCriacao != null)
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      const SizedBox(width: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      child: Row(
                         children: [
-                          Text(
-                            'Membro desde',
-                            style: GoogleFonts.montserrat(
-                              fontSize: 12,
-                              color: Colors.grey[600],
-                            ),
+                          Icon(
+                            Icons.calendar_today_outlined,
+                            color: Colors.grey[700],
                           ),
-                          const SizedBox(height: 2),
-                          Text(
-                            '${dataCriacao.day.toString().padLeft(2, '0')}/${dataCriacao.month.toString().padLeft(2, '0')}/${dataCriacao.year}',
-                            style: GoogleFonts.montserrat(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
+                          const SizedBox(width: 12),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Membro desde',
+                                style: GoogleFonts.montserrat(
+                                  fontSize: 12,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '${dataCriacao.day.toString().padLeft(2, '0')}/${dataCriacao.month.toString().padLeft(2, '0')}/${dataCriacao.year}',
+                                style: GoogleFonts.montserrat(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                ),
+                    ),
+                  if (_usuario?.cpf != null && _usuario!.cpf!.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.badge_outlined, color: Colors.grey[700]),
+                          const SizedBox(width: 12),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'CPF',
+                                style: GoogleFonts.montserrat(
+                                  fontSize: 12,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                _usuario!.cpf!,
+                                style: GoogleFonts.montserrat(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
               ),
+            ),
 
             const SizedBox(height: 24),
 
@@ -749,31 +863,10 @@ class _PerfilPageState extends State<PerfilPage> {
 
             const SizedBox(height: 24),
 
-            // UID do usuário
-            Container(
-              padding: const EdgeInsets.all(12),
-              margin: const EdgeInsets.symmetric(horizontal: 24),
-              decoration: BoxDecoration(
-                color: Colors.grey[200],
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.fingerprint, size: 16, color: Colors.grey[600]),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'ID: ${_firebaseUser!.uid.substring(0, 8)}...',
-                      style: GoogleFonts.montserrat(
-                        fontSize: 11,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
+            // UID do usuário (apenas em modo debug - removido por segurança)
+            // O UID não deve ser exibido na interface do usuário final
+            // Se precisar para debug, use: kDebugMode do Flutter
+            // if (kDebugMode) Container(...)
             const SizedBox(height: 16),
 
             // Versão do app

@@ -142,23 +142,25 @@ class RegisterBox extends StatelessWidget {
                 ),
               ),
               onPressed: () async {
+                // ✅ Firebase já foi inicializado no main(), não precisa inicializar novamente
                 debugPrint("Registrando...");
                 debugPrint("Nome: ${_nomeController.text}");
                 debugPrint("E-mail: ${_emailController.text}");
                 debugPrint("CPF: ${_cpfController.text}");
                 debugPrint("Senha: ${_senhaController.text}");
                 debugPrint("Papel: $papelSelecionado");
-                Usuario novoUsuario = Usuario(
-                  idUsuario: _nomeController.text,
-                  nome: _nomeController.text,
-                  email: _emailController.text,
-                  senhaHash: _senhaController.text,
-                  papel: papelSelecionado ?? PapelUsuario.cidadao,
-                );
-                  // ✅ Espera o resultado da autenticação
-                User? user = await criarUsuario(novoUsuario.toJson());
+
+                // Prepara os dados para criar o usuário
+                Map<String, dynamic> dadosUsuario = {
+                  'nome': _nomeController.text,
+                  'email': _emailController.text,
+                  'cpf': _cpfController.text.isEmpty ? null : _cpfController.text,
+                  'senhaHash': _senhaController.text,
+                  'papel': (papelSelecionado ?? PapelUsuario.cidadao).name,
+                };
+
+                User? user = await criarUsuario(dadosUsuario);
                 if (user != null) {
-                  // ✅ Login bem-sucedido → vai pra tela de boas-vindas
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(
@@ -166,13 +168,13 @@ class RegisterBox extends StatelessWidget {
                           WelcomePage(nomeUsuario: _nomeController.text),
                     ),
                   );
-                } else{
-                  // ❌ Falha → mostra mensagem
+                } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Falha na autenticação')),
                   );
                 }
               },
+
               child: Text(
                 "Cadastrar",
                 style: GoogleFonts.montserrat(

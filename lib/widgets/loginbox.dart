@@ -4,6 +4,7 @@ import '../screen/register.dart';
 import '../services/auth.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:denun/screen/welcome.dart';
+
 class LoginBox extends StatelessWidget {
   LoginBox({super.key});
 
@@ -78,11 +79,12 @@ class LoginBox extends StatelessWidget {
                 ),
               ),
               onPressed: () async {
+                // ✅ Firebase já foi inicializado no main(), não precisa inicializar novamente
                 User? user = await entrarUsuario(
                   _emailController.text,
                   _senhaController.text,
                 );
-                if (user != null){
+                if (user != null) {
                   // ✅ Login bem-sucedido → vai pra tela de boas-vindas
                   Navigator.pushReplacement(
                     context,
@@ -91,7 +93,7 @@ class LoginBox extends StatelessWidget {
                           WelcomePage(nomeUsuario: _emailController.text),
                     ),
                   );
-                }else{
+                } else {
                   // ❌ Falha → mostra mensagem
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Falha na autenticação')),
