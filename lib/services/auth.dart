@@ -9,7 +9,7 @@ Future<User?> criarUsuario(Map<String, dynamic> dic) async {
     // Cria o usuário no Firebase Auth
     UserCredential cred = await FirebaseAuth.instance
         .createUserWithEmailAndPassword(email: email, password: senha);
-    
+
     // Cria o objeto Usuario com os dados fornecidos
     Usuario novoUsuario = Usuario(
       idUsuario: cred.user!.uid,
@@ -17,7 +17,7 @@ Future<User?> criarUsuario(Map<String, dynamic> dic) async {
       email: email,
       cpf: dic['cpf'],
       senhaHash: senha, // Não será salvo no Firestore
-      papel: dic['papel'] != null 
+      papel: dic['papel'] != null
           ? PapelUsuario.values.firstWhere(
               (p) => p.name == dic['papel'],
               orElse: () => PapelUsuario.cidadao,
@@ -29,9 +29,11 @@ Future<User?> criarUsuario(Map<String, dynamic> dic) async {
     // Salva os dados do usuário no Firestore
     UserService userService = UserService();
     bool sucesso = await userService.salvarUsuario(novoUsuario, cred.user!.uid);
-    
+
     if (sucesso) {
-      print("✅ Usuário criado e dados salvos no Firestore: ${cred.user!.email}");
+      print(
+        "✅ Usuário criado e dados salvos no Firestore: ${cred.user!.email}",
+      );
     } else {
       print("⚠️ Usuário criado no Auth, mas falha ao salvar no Firestore");
     }
@@ -46,7 +48,6 @@ Future<User?> criarUsuario(Map<String, dynamic> dic) async {
   }
 }
 
-
 Future<User?> entrarUsuario(String email, String senha) async {
   try {
     // Tenta autenticar o usuário no Firebase
@@ -56,8 +57,10 @@ Future<User?> entrarUsuario(String email, String senha) async {
     // Verifica se os dados do usuário existem no Firestore
     // Se não existirem, cria um registro básico (para usuários antigos)
     UserService userService = UserService();
-    Usuario? usuarioExistente = await userService.buscarUsuarioPorId(cred.user!.uid);
-    
+    Usuario? usuarioExistente = await userService.buscarUsuarioPorId(
+      cred.user!.uid,
+    );
+
     if (usuarioExistente == null) {
       // Se não existe no Firestore, cria um registro básico
       Usuario usuarioBasico = Usuario(
@@ -96,5 +99,14 @@ Future<User?> entrarUsuario(String email, String senha) async {
   } catch (e) {
     print("❌ Erro inesperado: $e");
     return null;
+  }
+}
+
+Future<void> sairUsuario() async {
+  try {
+    await FirebaseAuth.instance.signOut();
+    print("✅ Usuário desconectado com sucesso.");
+  } catch (e) {
+    print("❌ Erro ao desconectar usuário: $e");
   }
 }

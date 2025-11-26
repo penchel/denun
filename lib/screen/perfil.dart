@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/user_service.dart';
+import '../services/auth.dart';
 import '../domain/Usuario.dart';
+import 'ajuda.dart';
 
 class PerfilPage extends StatefulWidget {
   const PerfilPage({super.key});
@@ -391,8 +393,15 @@ class _PerfilPageState extends State<PerfilPage> {
           ),
           ElevatedButton(
             onPressed: () async {
-              await FirebaseAuth.instance.signOut();
-              Navigator.of(context).popUntil((route) => route.isFirst);
+              // Chama o método de sair do serviço de autenticação
+              await sairUsuario();
+
+              // Navega para a tela de login (removendo todas as rotas anteriores)
+              if (mounted) {
+                Navigator.of(
+                  context,
+                ).pushNamedAndRemoveUntil('/', (route) => false);
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
@@ -773,6 +782,9 @@ class _PerfilPageState extends State<PerfilPage> {
                     titulo: 'Alterar Senha',
                     onTap: _alterarSenha,
                   ),
+
+// ... (inside build method, in the menu column)
+
                   _buildMenuItem(
                     icon: Icons.refresh,
                     titulo: 'Recarregar Perfil',
@@ -794,12 +806,10 @@ class _PerfilPageState extends State<PerfilPage> {
                     icon: Icons.help_outline,
                     titulo: 'Ajuda e Suporte',
                     onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Em desenvolvimento',
-                            style: GoogleFonts.montserrat(),
-                          ),
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AjudaPage(),
                         ),
                       );
                     },

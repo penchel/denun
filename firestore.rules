@@ -2,10 +2,24 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
+    // Funções auxiliares
+    function getUserData() {
+      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data;
+    }
+    
+    function isAgente() {
+      return getUserData().papel == 'agente';
+    }
+    
+    function isAdmin() {
+      return getUserData().papel == 'admin';
+    }
+
     // Regras para a coleção de usuários
     match /usuarios/{userId} {
       // Permite que usuários autenticados leiam apenas seus próprios dados
-      allow read: if request.auth != null && request.auth.uid == userId;
+      // Admin e Agente podem ler dados de outros usuários (opcional, mas útil para gestão)
+      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin() || isAgente());
       
       // Permite que usuários autenticados criem/atualizem apenas seus próprios dados
       allow create, update: if request.auth != null && request.auth.uid == userId;
@@ -24,13 +38,16 @@ service cloud.firestore {
       allow create: if request.auth != null && 
                      request.resource.data.autorId == request.auth.uid;
       
-      // Apenas o autor pode atualizar sua própria denúncia
+      // Atualização:
+      // - Autor pode atualizar (se for sua denúncia)
+      // - Agente pode atualizar (para mudar status)
+      // - Admin pode atualizar (qualquer campo)
       allow update: if request.auth != null && 
-                     resource.data.autorId == request.auth.uid;
+                     (resource.data.autorId == request.auth.uid || isAgente() || isAdmin());
       
-      // Apenas o autor pode deletar sua própria denúncia
-      allow delete: if request.auth != null && 
-                     resource.data.autorId == request.auth.uid;
+      // Deleção:
+      // - Apenas Admin pode deletar
+      allow delete: if request.auth != null && isAdmin();
     }
     
     // Bloqueia acesso a qualquer outra coleção por padrão

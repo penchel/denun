@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <!--
     If you are serving your web app in a path other than the root, change the
@@ -27,22 +28,34 @@
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
+  <link rel="icon" type="image/png" href="favicon.png" />
 
   <title>denun</title>
   <link rel="manifest" href="manifest.json">
   <script src="env.js"></script>
   <script>
-    const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${window.env.GOOGLE_MAPS_API_KEY}`;
-    script.async = true;
-    document.head.appendChild(script);
+    if (window.env && window.env.GOOGLE_MAPS_API_KEY) {
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${window.env.GOOGLE_MAPS_API_KEY}&libraries=places`;
+      script.async = true;
+      script.onload = () => {
+        console.log('✅ Google Maps API loaded successfully');
+      };
+      script.onerror = () => {
+        console.error('❌ Failed to load Google Maps API');
+      };
+      document.head.appendChild(script);
+    } else {
+      console.error('❌ window.env or GOOGLE_MAPS_API_KEY is missing. Make sure web/env.js exists and contains the key.');
+    }
   </script>
 
 
 
 </head>
+
 <body>
   <script src="flutter_bootstrap.js" async></script>
 </body>
+
 </html>
